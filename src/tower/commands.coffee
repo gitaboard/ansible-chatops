@@ -47,6 +47,8 @@ module.exports =
     url = towerUrl + "/inventories/#{subcommand}/"
     auth = 'Basic ' + new Buffer(towerUser + ':' + towerPassword).toString('base64');
     console.info "Going to URL == #{url}"
+    hosts = []
+    msg = ""
     robot.http(url, options).headers(Authorization: auth).get() (error, response, body) ->
       if error
         callback "error!"
@@ -54,9 +56,24 @@ module.exports =
         data = null
         try
           data = JSON.parse body
-          msg = "name: #{data.name}, total hosts: #{data.total_hosts}, failures: #{data.hosts_with_active_failures}"
-          callback msg
+          msg += "name: #{data.name}, total hosts: #{data.total_hosts}, failures: #{data.hosts_with_active_failures} </p>"
         catch e
           callback "exception! #{e}"
       else
         callback "something bad happened #{response.statusCode}"
+    url = towerUrl + "/inventories/#{subcommand}/hosts/"
+    console.info "Going to URL == #{url}"
+    robot.http(url, options).headers(Authorization: auth).get() (error, response, body) ->
+      if error
+        callback "error!"
+      if response.statusCode is 200
+        data = null
+        try
+          data = JSON.parse body
+          for result in data.results
+            msg += "name: #{result.name}, id: #{result.instance_id}, failure: #{result.has_active_failures}</p>"
+        catch e
+          callback "exception! #{e}"
+      else
+        callback "something bad happened #{response.statusCode}"
+      callback msg
